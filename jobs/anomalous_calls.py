@@ -47,8 +47,8 @@ def process_partition(iterator):
         durations = [float(r['duration_sec']) for r in records]
         mean = sum(durations) / n
         
-        # Population variance and standard deviation
-        variance = sum((x - mean) ** 2 for x in durations) / n
+        # Sample variance and standard deviation
+        variance = sum((x - mean) ** 2 for x in durations) / (n - 1)
         stddev = math.sqrt(variance)
         
         if stddev == 0:

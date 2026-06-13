@@ -7,3 +7,4 @@ __pycache__/
 .system_generated/
 walkthrough.md
 *.log
+spark_temp/

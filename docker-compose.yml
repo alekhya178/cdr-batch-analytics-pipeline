@@ -38,20 +38,20 @@ services:
     depends_on:
       namenode:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9864"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
 
   spark-master:
-    image: apache/spark:3.5.0
+    image: bitnamilegacy/spark:3.5
     container_name: spark-master
     ports:
       - "8081:8080"
       - "7077:7077"
     user: root
-    command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master --ip 0.0.0.0 --port 7077 --webui-port 8080
+    environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
     volumes:
       - ./data:/data
       - ./jobs:/jobs
@@ -66,13 +66,18 @@ services:
       retries: 5
 
   spark-worker:
-    image: apache/spark:3.5.0
+    image: bitnamilegacy/spark:3.5
     container_name: spark-worker
     user: root
-    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077 --webui-port 8081
     environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
       - SPARK_WORKER_CORES=${SPARK_WORKER_CORES:-2}
       - SPARK_WORKER_MEMORY=${SPARK_WORKER_MEMORY:-2G}
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
     volumes:
       - ./data:/data
       - ./jobs:/jobs
@@ -80,11 +85,7 @@ services:
     depends_on:
       spark-master:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
+
 
   data-generator:
     image: python:3.10-slim
