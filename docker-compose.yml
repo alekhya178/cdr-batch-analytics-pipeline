@@ -1,0 +1,137 @@
+version: '3.8'
+
+services:
+  namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    container_name: namenode
+    ports:
+      - "9870:9870"
+      - "9000:9000"
+    environment:
+      - CLUSTER_NAME=${CLUSTER_NAME:-cdr-analytics-cluster}
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+      - HDFS_CONF_dfs_namenode_datanode_registration_ip___hostname___check=false
+      - HDFS_CONF_dfs_permissions_enabled=false
+      - HDFS_CONF_dfs_namenode_safemode_threshold_pct=0.0
+      - HDFS_CONF_dfs_namenode_safemode_extension=0
+    volumes:
+      - hadoop_namenode:/hadoop/dfs/name
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9870"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  datanode:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: datanode
+    ports:
+      - "9864:9864"
+    environment:
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+      - HDFS_CONF_dfs_datanode_address=0.0.0.0:9866
+      - HDFS_CONF_dfs_datanode_http_address=0.0.0.0:9864
+      - HDFS_CONF_dfs_datanode_ipc_address=0.0.0.0:9867
+      - HDFS_CONF_dfs_permissions_enabled=false
+    volumes:
+      - hadoop_datanode:/hadoop/dfs/data
+    depends_on:
+      namenode:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9864"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  spark-master:
+    image: apache/spark:3.5.0
+    container_name: spark-master
+    ports:
+      - "8081:8080"
+      - "7077:7077"
+    user: root
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master --ip 0.0.0.0 --port 7077 --webui-port 8080
+    volumes:
+      - ./data:/data
+      - ./jobs:/jobs
+      - ./output:/output
+    depends_on:
+      namenode:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  spark-worker:
+    image: apache/spark:3.5.0
+    container_name: spark-worker
+    user: root
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077 --webui-port 8081
+    environment:
+      - SPARK_WORKER_CORES=${SPARK_WORKER_CORES:-2}
+      - SPARK_WORKER_MEMORY=${SPARK_WORKER_MEMORY:-2G}
+    volumes:
+      - ./data:/data
+      - ./jobs:/jobs
+      - ./output:/output
+    depends_on:
+      spark-master:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  data-generator:
+    image: python:3.10-slim
+    container_name: data-generator
+    volumes:
+      - ./data:/data
+    command: >
+      bash -c "chmod +x /data/generate_records.sh && /data/generate_records.sh && tail -f /dev/null"
+    healthcheck:
+      test: ["CMD", "test", "-f", "/data/cdr_data.csv"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  airflow:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ${AIRFLOW_IMAGE_NAME:-airflow-spark:2.8.0}
+    container_name: airflow
+    ports:
+      - "8080:8080"
+    environment:
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - AIRFLOW__CORE__EXECUTOR=SequentialExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=sqlite:////opt/airflow/airflow.db?timeout=30
+      - AIRFLOW_UID=${AIRFLOW_UID:-50000}
+      - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=False
+      - AIRFLOW__WEBSERVER__WEB_SERVER_MASTER_TIMEOUT=300
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./jobs:/jobs
+      - ./data:/data
+      - ./output:/output
+    command: >
+      bash -c "airflow db init &&
+               airflow users create --username admin --password admin --firstname Admin --lastname Admin --role Admin --email admin@example.com || true &&
+               (airflow scheduler & airflow webserver)"
+    depends_on:
+      data-generator:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+volumes:
+  hadoop_namenode:
+  hadoop_datanode:
