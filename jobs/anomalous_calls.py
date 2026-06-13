@@ -3,8 +3,8 @@ import json
 import os
 import math
 from datetime import datetime, timezone
-from pyspark.sql import SparkSession
-from pyspark.sql.types import StructType, StructField, StringType, IntegerType, FloatType
+from pyspark.sql import SparkSession  # pyrefly: ignore [missing-import]
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType, FloatType  # pyrefly: ignore [missing-import]
 
 def write_hdfs_file(spark, path, content):
     try:

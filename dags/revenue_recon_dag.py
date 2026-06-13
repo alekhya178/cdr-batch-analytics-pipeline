@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
-from airflow import DAG
-from airflow.operators.bash import BashOperator
+from airflow import DAG  # pyrefly: ignore [missing-import]
+from airflow.operators.bash import BashOperator  # pyrefly: ignore [missing-import]
 
 default_args = {
     'owner': 'airflow',

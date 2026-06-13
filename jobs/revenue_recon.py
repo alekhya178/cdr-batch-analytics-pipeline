@@ -2,8 +2,8 @@ import argparse
 import json
 import os
 from datetime import datetime, timezone
-from pyspark.sql import SparkSession
-from pyspark.sql.functions import sum as spark_sum
+from pyspark.sql import SparkSession  # pyrefly: ignore [missing-import]
+from pyspark.sql.functions import sum as spark_sum  # pyrefly: ignore [missing-import]
 
 def write_hdfs_file(spark, path, content):
     try:
