@@ -30,7 +30,7 @@ with DAG(
             /jobs/tower_heatmap.py \
             --input /data/cdr_data.csv \
             --output-dir /output/tower_utilization_heatmap \
-            --run-id "{{ dag_run.conf.get('run_id', run_id) }}"
+            --run-id "{{ dag_run.conf.get('run_id', 'default_run') }}"
         """,
     )
 

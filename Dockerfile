@@ -15,13 +15,12 @@ RUN apt-get update && \
 RUN ln -s /usr/lib/jvm/java-17-openjdk-* /usr/lib/jvm/default-java
 ENV JAVA_HOME=/usr/lib/jvm/default-java
 
-# Copy local Spark binaries
+# Download Spark binaries
 ENV SPARK_VERSION=3.5.6
 ENV SPARK_HOME=/opt/spark
 RUN mkdir -p ${SPARK_HOME} && \
     wget -qO- https://archive.apache.org/dist/spark/spark-3.5.6/spark-3.5.6-bin-hadoop3.tgz | tar -xz -C ${SPARK_HOME} --strip-components=1 && \
     chmod -R a+rx ${SPARK_HOME}
-RUN chmod -R a+rx ${SPARK_HOME}
 
 # Add Spark bin to PATH
 ENV PATH=$PATH:${SPARK_HOME}/bin:${SPARK_HOME}/sbin

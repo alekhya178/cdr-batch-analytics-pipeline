@@ -30,7 +30,7 @@ with DAG(
             /jobs/revenue_recon.py \
             --input /data/cdr_data.csv \
             --output-dir /output/revenue_reconciliation \
-            --run-id "{{ dag_run.conf.get('run_id', run_id) }}"
+            --run-id "{{ dag_run.conf.get('run_id', 'default_run') }}"
         """,
     )
 

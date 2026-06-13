@@ -30,7 +30,7 @@ with DAG(
             /jobs/top_callers.py \
             --input /data/cdr_data.csv \
             --output-dir /output/top_callers_by_spend \
-            --run-id "{{ dag_run.conf.get('run_id', run_id) }}"
+            --run-id "{{ dag_run.conf.get('run_id', 'default_run') }}"
         """,
     )
 

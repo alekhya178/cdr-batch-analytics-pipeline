@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+# pyrefly: ignore [missing-import]
 from airflow import DAG
 from airflow.operators.bash import BashOperator
 
@@ -30,7 +31,7 @@ with DAG(
             /jobs/anomalous_calls.py \
             --input /data/cdr_data.csv \
             --output-dir /output/anomalous_call_detection \
-            --run-id "{{ dag_run.conf.get('run_id', run_id) }}" \
+            --run-id "{{ dag_run.conf.get('run_id', 'default_run') }}" \
             --num-partitions 16
         """,
     )
